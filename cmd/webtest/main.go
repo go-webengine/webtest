@@ -32,5 +32,6 @@ func RootCmd() *cobra.Command {
 		SilenceUsage: true,
 	}
 	cmd.AddCommand(newValidateCmd())
+	cmd.AddCommand(newRunCmd())
 	return cmd
 }
