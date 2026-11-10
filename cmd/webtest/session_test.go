@@ -4,6 +4,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"os"
@@ -58,6 +59,34 @@ func TestSaveAndLoadCookieJarRoundtrip(t *testing.T) {
 	got := reloaded.Cookies(u)
 	if len(got) != 1 || got[0].Name != "session" || got[0].Value != "abc123" {
 		t.Fatalf("reloaded cookies = %v, want [session=abc123]", got)
+	}
+}
+
+// TestSaveCookieJarNoDuplicateEntries is the regression test for a real
+// bug a live smoke-test run (building the actual binary, logging into a
+// real local test server) caught: saveCookieJar's own on-disk JSON array
+// held the SAME cookie twice. The earlier roundtrip test above didn't
+// catch it because reloading collapses duplicate (name, domain, path)
+// entries back down to one when SetCookies is called — the bug was only
+// visible by reading the raw file, not by reloading it.
+func TestSaveCookieJarNoDuplicateEntries(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cookies.json")
+	jar, _ := loadCookieJar(filepath.Join(t.TempDir(), "nope.json"))
+	jar.SetCookies(&url.URL{Scheme: "http", Host: "plain.test"}, []*http.Cookie{{Name: "session", Value: "x", Path: "/"}})
+
+	if err := saveCookieJar(path, jar, []string{"plain.test"}); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var stored []storedCookie
+	if err := json.Unmarshal(data, &stored); err != nil {
+		t.Fatal(err)
+	}
+	if len(stored) != 1 {
+		t.Fatalf("saved cookie file has %d entries for one cookie, want exactly 1: %+v", len(stored), stored)
 	}
 }
 

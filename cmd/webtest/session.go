@@ -105,10 +105,16 @@ func saveCookieJar(path string, jar *cookiejar.Jar, hosts []string) error {
 	}
 	var out []storedCookie
 	for _, host := range hosts {
-		for _, scheme := range [...]string{"https", "http"} {
-			for _, c := range jar.Cookies(&url.URL{Scheme: scheme, Host: host}) {
-				out = append(out, storedCookie{Name: c.Name, Value: c.Value, Domain: host, Path: c.Path, Expires: c.Expires})
-			}
+		// "https" alone is enough: cookiejar stores by domain, not by
+		// scheme — scheme only GATES a Secure-flagged cookie (hidden from
+		// an http:// query), never partitions storage, so an "https"
+		// query already returns every cookie (secure or not) a real
+		// request to this host would carry. Querying "http" too double-
+		// counted every non-secure cookie (confirmed directly: a live
+		// smoke-test run against a plain-http test server produced two
+		// identical entries for the one cookie it set).
+		for _, c := range jar.Cookies(&url.URL{Scheme: "https", Host: host}) {
+			out = append(out, storedCookie{Name: c.Name, Value: c.Value, Domain: host, Path: c.Path, Expires: c.Expires})
 		}
 	}
 	data, err := json.MarshalIndent(out, "", "  ")
