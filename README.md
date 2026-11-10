@@ -2,10 +2,14 @@
 
 HCL-driven browser-automation CLI for [go-webengine/engine](https://github.com/go-webengine/engine): click/fill-form/assert test scenarios, for driving a rendered page's own `LiveDocument` (`Focus`/`Type`/`Click`/`Submit`) from a declarative scenario file instead of hand-written Go.
 
-Status: in progress. This repository currently holds only the scenario
-format (`hclscenario`) — parsing, validation, and the function allowlist.
-The driver/CLI wiring and the dry-run/session/pin/audit-log/anti-bot
-guardrails are tracked separately and not implemented yet.
+Status: in progress. This repository currently holds the scenario format
+(`hclscenario`), a `driver` package that executes a parsed scenario
+against a real `engine.LiveDocument` (click/fill/assert/submit, plus the
+pinned-page identity check), and a `webtest validate <file>` CLI command
+(parse-only). The `run` CLI subcommand and the session/dry-run-by-default/
+audit-log/bounds/anti-bot guardrails are tracked separately and not
+implemented yet — `driver.Run`'s own `doSubmit` parameter is the one
+escape hatch those guardrails will gate.
 
 ## Scenario format
 
