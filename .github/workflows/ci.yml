@@ -12,8 +12,22 @@ on:
 permissions:
   contents: read
 
-env:
-  GO_VERSION: "1.27.3"
+# ⛔ GO_VERSION IS GONE ON PURPOSE. It held the literal "1.27.3" and the only
+# setup-go step read it as `${{ env.GO_VERSION }}`, which is a hard-coded pin
+# one indirection away: it drifts from go.mod exactly as a literal does, and
+# `setup-go` sets GOTOOLCHAIN=local, so a pin UNDER the directive does not build
+# an older toolchain quietly — it REFUSES with `go.mod requires go >= X`.
+# Measured 2026-11-15 on five of six go-filesystems repositories: every job red
+# at once, for a one-line change to go.mod.
+#
+# ⚠ And the indirection hid it from the auditor: `gofloor` reports a hard-coded
+# `go-version` as a finding but classifies `${{ … }}` merely as "expression", so
+# this repository read as clean while its pin sat two patch releases behind the
+# floor the fleet was moving to. Three of the five Go repositories in this
+# organisation had the same shape.
+#
+# The step now reads `go-version-file: go.mod`, so the toolchain is the declared
+# floor by construction and the next raise needs no edit here.
 
 jobs:
   test:
@@ -24,7 +38,7 @@ jobs:
 
       - uses: actions/setup-go@v7
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod
           check-latest: true
 
       - name: Build

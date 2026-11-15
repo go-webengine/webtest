@@ -1,6 +1,31 @@
 module github.com/go-webengine/webtest
 
-go 1.27.3
+// ⛔ THE PATCH, BECAUSE THIS LINE IS THE ONLY ONE OF THE THREE GO PINS A
+// CONSUMER HONOURS: `go install` with GOTOOLCHAIN=local obeys it, while the CI
+// pin merely builds our artefacts and the toolchain stamped in a binary
+// describes one executable.
+//
+// Raised to 1.27.4 on 2026-11-15 for GO-2026-6859 — published 2026-11-11,
+// CVE-2026-97054, "HTTP/1 server crash due to MaxBytesReader header race in
+// net/http", stdlib, fixed in 1.26.11 and 1.27.4. Read at
+// https://vuln.go.dev/ID/GO-2026-6859.json rather than quoted from notes.
+//
+// Measured, not assumed: `modfloor --floor 1.27.4` read the directive this
+// module PUBLISHED at v0.3.1 from the module proxy as `go 1.27.3`, and reported
+// it PUBLISHED — so a consumer installing it under GOTOOLCHAIN=local built
+// against an unpatched standard library.
+//
+// ⚠ Reachability is govulncheck's question, not this line's. This repository is
+// NOT in the fleet's network-facing list; the floor is raised because a
+// consumer is entitled to build against the patched library.
+//
+// ⛔ AND THE CI PIN MOVED WITH IT, in the same change, because it had to: the
+// workflow held `GO_VERSION: "1.27.3"` and the step read it as an expression —
+// a hard-coded pin one indirection away. Raising this line alone would have
+// made the lane REFUSE (`go.mod requires go >= 1.27.4`, since setup-go sets
+// GOTOOLCHAIN=local), which is what happened to five of six go-filesystems
+// repositories the same day. The step now reads `go-version-file: go.mod`.
+go 1.27.4
 
 require (
 	github.com/go-webengine/engine v0.47.0
